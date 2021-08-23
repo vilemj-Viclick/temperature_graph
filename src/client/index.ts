@@ -1,7 +1,7 @@
+import { ChartData } from 'chart.js';
 import Chart from 'chart.js/auto';
 import {
   ITemperatureReading,
-  Log,
   LogJson,
 } from '../types';
 import {
@@ -20,8 +20,25 @@ const probeMapping = {
   },
 };
 
+const getNewReadings = async () => await (await fetch('./readings.json')).json() as LogJson<ITemperatureReading>;
+
+const getChartData = (readings: LogJson<ITemperatureReading>):ChartData<'line', any, unknown> => {
+  return {
+    labels: readings.map(reading => reading.timestamp).map(timestamp => new Date(timestamp)).map(renderTime),
+    datasets: Object.keys(getFirst(readings)?.item ?? {}).map(probeId => {
+      return {
+        label: probeMapping[probeId].probeName,
+        fill: false,
+        data: readings.map(reading => reading.item[probeId].temperature),
+        tension: 0.1,
+        borderColor: probeMapping[probeId].color,
+      };
+    }),
+  }
+}
+
 const main = async () => {
-  const readings = await (await fetch('./readings.json')).json() as LogJson<ITemperatureReading>;
+  const readings = await getNewReadings();
   console.log(readings);
 
   const chart = new Chart(document.getElementById('chart') as HTMLCanvasElement, {
@@ -33,34 +50,11 @@ const main = async () => {
         },
       },
     },
-    data: {
-      labels: readings.map(reading => reading.timestamp).map(timestamp => new Date(timestamp)).map(renderTime),
-      datasets: Object.keys(getFirst(readings)?.item ?? {}).map(probeId => {
-        return {
-          label: probeMapping[probeId].probeName,
-          fill: false,
-          data: readings.map(reading => reading.item[probeId].temperature),
-          tension: 0.1,
-          borderColor: probeMapping[probeId].color,
-        };
-      }),
-    },
+    data: getChartData(readings),
   });
 
-  setInterval(async() => {
-    const newReadings = await (await fetch('./readings.json')).json() as LogJson<ITemperatureReading>;
-    chart.data = {
-      labels: newReadings.map(reading => reading.timestamp).map(timestamp => new Date(timestamp)).map(renderTime),
-      datasets: Object.keys(getFirst(newReadings)?.item ?? {}).map(probeId => {
-        return {
-          label: probeMapping[probeId].probeName,
-          fill: false,
-          data: newReadings.map(reading => reading.item[probeId].temperature),
-          tension: 0.1,
-          borderColor: probeMapping[probeId].color,
-        };
-      }),
-    };
+  setInterval(async () => {
+    chart.data = getChartData(await getNewReadings());
     chart.update('none');
   }, 5000);
 };
