@@ -1,41 +1,29 @@
 import { ChartData } from 'chart.js';
 import Chart from 'chart.js/auto';
-import {
-  ITemperatureReading,
-  LogJson,
-} from '../types';
-import {
-  getFirst,
-  renderTime,
-} from '../utils/utils';
+import { ViewModelClient } from '../types';
+import { renderTime } from '../utils/generalUtils';
 
-const probeMapping = {
-  '28ac73e7050000e6': {
-    probeName: 'Plášť',
-    color: 'rgb(75, 192, 192)',
-  },
-  '28c04bdc060000da': {
-    probeName: 'Medium',
-    color: 'rgb(48, 137, 34)',
-  },
-};
 
-const getNewReadings = async () => await (await fetch('./readings.json')).json() as LogJson<ITemperatureReading>;
+const getNewReadings = async () => await (await fetch('./readings.json')).json() as ViewModelClient;
 
-const getChartData = (readings: LogJson<ITemperatureReading>):ChartData<'line', any, unknown> => {
+const getChartData = (viewData: ViewModelClient): ChartData<'line', any, unknown> => {
+  const {
+    log: readings,
+    probeInfos,
+  } = viewData;
   return {
     labels: readings.map(reading => reading.timestamp).map(timestamp => new Date(timestamp)).map(renderTime),
-    datasets: Object.keys(getFirst(readings)?.item ?? {}).map(probeId => {
+    datasets: Object.keys(probeInfos).map(probeId => {
       return {
-        label: probeMapping[probeId].probeName,
+        label: probeInfos[probeId].probeName,
         fill: false,
-        data: readings.map(reading => reading.item[probeId].temperature),
+        data: readings.map(reading => reading.item[probeId]?.temperature ?? null),
         tension: 0.1,
-        borderColor: probeMapping[probeId].color,
+        borderColor: probeInfos[probeId].color,
       };
     }),
-  }
-}
+  };
+};
 
 const main = async () => {
   const readings = await getNewReadings();

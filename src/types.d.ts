@@ -29,4 +29,26 @@ export type Config = {
   readonly probingIntervalMs: number,
   readonly readingsJSonPath: string;
   readonly numberOfReadingsToKeep: number;
+  readonly maxTemperatureDeltaInInterval: number; // This will serve to filter out incoherent readings.
 };
+
+export interface IProbeInfo {
+  readonly probeName: string;
+  readonly color: string;
+}
+
+export interface IProbeInfoDictionary {
+  readonly [key: string]: IProbeInfo;
+}
+
+export type ViewModelServer = {
+  readonly log: Log<ITemperatureReading>;
+  readonly probeInfos: IProbeInfoDictionary;
+};
+
+export type ViewModelClient = {
+  readonly log: LogJson<ITemperatureReading>;
+  readonly probeInfos: IProbeInfoDictionary;
+};
+
+export type Writeable<T> = { -readonly [P in keyof T]: T[P] };

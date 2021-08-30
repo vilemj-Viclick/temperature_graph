@@ -5,17 +5,28 @@ import {
   ITemperatureReading,
   Log,
 } from '../../types';
-import { prettyPrint } from '../../utils/utils';
+import {
+  getLast,
+  log,
+  prettyPrint,
+} from '../../utils/generalUtils';
 import { parseReading } from './temperatureParsing';
 
 export const createTemperatureReader = (config: Config) => {
   const getReadings = {
     async* [Symbol.asyncIterator]() {
       for await(const _start of setInterval(config.probingIntervalMs, Date.now())) {
-        const temperaturesText = await (await fetch(config.probesUrl)).text();
-        const reading = parseReading(temperaturesText);
+        try {
+          const temperaturesText = await (await fetch(config.probesUrl)).text();
+          const reading = parseReading(temperaturesText);
 
-        yield reading;
+          yield reading;
+        }
+        catch (e) {
+          log('Failed reading!!! Cause follows:');
+          log(e);
+          yield null;
+        }
       }
     },
   };
@@ -25,14 +36,28 @@ export const createTemperatureReader = (config: Config) => {
       let temperatureProbeReadings: Log<ITemperatureReading> = [];
 
       for await (const reading of getReadings) {
-        prettyPrint(reading);
-        temperatureProbeReadings.push({
-          timestamp: new Date(),
-          item: reading,
-        });
+        if (reading) {
+          prettyPrint(reading);
 
-        temperatureProbeReadings = temperatureProbeReadings.slice(0, config.numberOfReadingsToKeep);
+          const lastReading = getLast(temperatureProbeReadings);
+          const correctedReading = Object.keys(reading).reduce((correctedReadingResult, probeId) => {
+            const lastProbeTemp = lastReading?.item[probeId]?.temperature;
+            if (lastProbeTemp && (Math.abs(lastProbeTemp - reading[probeId].temperature) > config.maxTemperatureDeltaInInterval)) {
+              log(`Skipping a reading of '${probeId}' because the temperature read is too fa from the last one.`);
+              return correctedReadingResult;
+            }
 
+            correctedReadingResult[probeId] = reading[probeId];
+            return correctedReadingResult;
+          }, {});
+
+          temperatureProbeReadings.push({
+            timestamp: new Date(),
+            item: correctedReading,
+          });
+
+          temperatureProbeReadings = temperatureProbeReadings.slice(temperatureProbeReadings.length - config.numberOfReadingsToKeep);
+        }
         yield temperatureProbeReadings;
       }
     },

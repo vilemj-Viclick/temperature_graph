@@ -5,6 +5,7 @@
   "main": "src/server/index.ts",
   "scripts": {
     "start": "cross-env babel-node --extensions '.ts','.tsx','.js' src/server/index.ts",
+    "start-fake-temp-server": "cross-env babel-node --extensions '.ts','.tsx','.js' src/fakeTemperatureServer/fakeTempServer.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
