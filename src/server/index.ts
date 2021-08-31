@@ -9,7 +9,11 @@ import {
   Log,
   ViewModelServer,
 } from '../types';
-import { prettify } from '../utils/generalUtils';
+import {
+  getLast,
+  prettify,
+  prettyPrint,
+} from '../utils/generalUtils';
 import { compileClient } from './compiling/compileClient';
 import { saveAsJson } from './fileManipulation';
 import { getProbeMappings } from './probeMapping';
@@ -17,20 +21,24 @@ import { getStaticRoutes } from './routing';
 import { createTemperatureReader } from './tempReading/tempReading';
 
 const config: Config = {
-  probesUrl: 'http://sondy/',
-  // probesUrl: 'http://localhost:3001/',  // For testing purposes
+  // probesUrl: 'http://sondy/',
+  probesUrl: 'http://localhost:3001/',  // For testing purposes
   probingIntervalMs: 1000,
   readingsJSonPath: './public/files/readings.json',
   numberOfReadingsToKeep: 1800 / 5, // Half an hour
   maxTemperatureDeltaInInterval: 5,
+  probeRequestTimeoutMs: 1000,
 };
 
 const startTemperatureLogging = async (updateTempLog: (log: Log<ITemperatureReading>) => void) => {
-  for await (const readingLog of createTemperatureReader(config)) {
-    // prettyPrint(getLast(readingLog));
+  const tempReader = createTemperatureReader(config);
+
+  setInterval(async ()=>{
+    const readingLog = await tempReader.getNextReadings();
+    prettyPrint(getLast(readingLog));
     saveAsJson(readingLog, path.join(__dirname, '../..', config.readingsJSonPath));
     updateTempLog(readingLog);
-  }
+  },config.probingIntervalMs);
 };
 
 const main = async () => {
@@ -49,7 +57,7 @@ const main = async () => {
   router.get('/readings.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
-    const response:ViewModelServer = {
+    const response: ViewModelServer = {
       log: lastReadingLog,
       probeInfos: getProbeMappings(lastReadingLog),
     };

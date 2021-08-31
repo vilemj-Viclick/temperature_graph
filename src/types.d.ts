@@ -30,6 +30,7 @@ export type Config = {
   readonly readingsJSonPath: string;
   readonly numberOfReadingsToKeep: number;
   readonly maxTemperatureDeltaInInterval: number; // This will serve to filter out incoherent readings.
+  readonly probeRequestTimeoutMs: number;
 };
 
 export interface IProbeInfo {

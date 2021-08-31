@@ -10,40 +10,116 @@ const flipCoin = (chance: number): boolean => {
   return Math.random() <= chance;
 };
 
-const getRandomNumberBetween = (min:number, max:number) => min + (Math.random() * (max-min));
+const getRandomNumberBetween = (min: number, max: number) => min + (Math.random() * (max - min));
 
-const renderTemperature = (num:number):string => {
-  return `${num>=0?'+': '-'}${num.toFixed(1)}`
+const renderTemperature = (num: number): string => {
+  return `${num >= 0 ? '+' : '-'}${num.toFixed(1)}`;
 };
 
-const getRandomTemperature = ():string => {
-  const num = getRandomNumberBetween(85,90);
-  return renderTemperature(num);
+type ProbeInfo = {
+  readonly probeId: string;
+  readonly chanceOfGettingRead: number;
+  readonly usualMaxTemperatureVariation: number;
+  readonly hiccupChance: number;
+  readonly flipDirectionChance: number;
+}
+
+type ProbeInfos = {
+  readonly [key: string]: ProbeInfo;
 };
 
-const knownProbeIds = ['28c04bdc060000da', '28ac73e7050000e6'];
-const unknownProbeIds = ['randomstring', 'Uááááááááááááá!!!'];
+type ProbeState = {
+  readonly temperatureEvolutionDirection: 'up' | 'down';
+  readonly lastSeriousTemperature: number;
+  readonly temperature: number;
+};
 
-const generateFakeTemperatureResponse = ():string => {
-  const knownLines = knownProbeIds.map(probeId => {
-    if(flipCoin(0.95)){
-      return `${probeId} ${getRandomTemperature()}`
+type ProbeStates = {
+  [key: string]: ProbeState;
+};
+
+const probeInfos: ProbeInfos = {
+  ['28c04bdc060000da']: {
+    probeId: '28c04bdc060000da',
+    chanceOfGettingRead: 0.98,
+    hiccupChance: 0.05,
+    usualMaxTemperatureVariation: 0.2,
+    flipDirectionChance: 0.05,
+  },
+  ['28ac73e7050000e6']: {
+    probeId: '28ac73e7050000e6',
+    chanceOfGettingRead: 0.98,
+    hiccupChance: 0.05,
+    usualMaxTemperatureVariation: 0.2,
+    flipDirectionChance: 0.05,
+  },
+  ['randomstring']: {
+    probeId: 'randomstring',
+    chanceOfGettingRead: 0.02,
+    hiccupChance: 0.05,
+    usualMaxTemperatureVariation: 0.2,
+    flipDirectionChance: 0.05,
+  },
+  ['Uááááááááááááá!!!']: {
+    probeId: 'Uááááááááááááá!!!',
+    chanceOfGettingRead: 0.02,
+    hiccupChance: 0.05,
+    usualMaxTemperatureVariation: 0.2,
+    flipDirectionChance: 0.05,
+  },
+};
+
+const getInitialProbeStates = (): ProbeStates => {
+  return Object.values(probeInfos).reduce((states, probeInfo) => {
+    const initialTemperature = getRandomNumberBetween(85, 90);
+    states[probeInfo.probeId] = {
+      temperature: initialTemperature,
+      lastSeriousTemperature: initialTemperature,
+      temperatureEvolutionDirection: flipCoin(0.5) ? 'up' : 'down',
+    };
+
+    return states;
+  }, {} as ProbeStates);
+};
+
+const getOppositeDirection = (direction: 'up' | 'down'): 'up' | 'down' => (direction === 'up') ? 'down' : 'up';
+
+const getNextProbeState = (probeInfo: ProbeInfo, probeState: ProbeState): ProbeState => {
+  if (flipCoin(probeInfo.hiccupChance)) { // Hiccup case
+    return {
+      ...probeState,
+      temperature: getRandomNumberBetween(-2500, 600),
+    };
+  }
+  // Serious reading
+  const temperatureDelta = getRandomNumberBetween(0, probeInfo.usualMaxTemperatureVariation * 100) / 100;
+  const newTemperature = probeState.temperatureEvolutionDirection === 'up' ?
+    probeState.lastSeriousTemperature + temperatureDelta : probeState.lastSeriousTemperature - temperatureDelta;
+
+  return {
+    ...probeState,
+    temperature: newTemperature,
+    lastSeriousTemperature: newTemperature,
+    ...(flipCoin(probeInfo.flipDirectionChance) ? {
+      temperatureEvolutionDirection: getOppositeDirection(probeState.temperatureEvolutionDirection),
+    } : {}),
+  };
+};
+
+const probeStates = getInitialProbeStates();
+
+const generateFakeTemperatureResponse = (): string => {
+  const lines = Object.values(probeInfos).map(probe => {
+    if (flipCoin(probe.chanceOfGettingRead)) {
+      const newProbeState = getNextProbeState(probeInfos[probe.probeId], probeStates[probe.probeId]);
+      probeStates[probe.probeId] = newProbeState;
+      return `${probe.probeId} ${renderTemperature(newProbeState.temperature)}`;
     }
 
     return null;
-  });
+  }).filter(Boolean);
 
-  const unknownLines = unknownProbeIds.map(probeId => {
-    if(flipCoin(0.02)){
-      return `${probeId} ${getRandomTemperature()}`
-    }
-
-    return null;
-  });
-
-  const allLines = [...knownLines, ...unknownLines];
-
-  return allLines.filter(Boolean).join('\n');
+  return lines.join('\n');
 };
 
 const main = async () => {
@@ -55,11 +131,17 @@ const main = async () => {
   router.get('/', (_req, res) => {
     res.setHeader('Content-Type', 'application/text');
 
-    const response = generateFakeTemperatureResponse();
+    if (flipCoin(0.01)) {
+      res.status(500);
+      res.end();
+    }
+    else {
+      const response = generateFakeTemperatureResponse();
 
-    prettyPrint(response);
+      prettyPrint(response);
 
-    res.end(response);
+      res.end(response);
+    }
   });
 
   app.use(router);
