@@ -1,10 +1,7 @@
 import express from 'express';
 import morgan from 'morgan';
 import { AddressInfo } from 'net';
-import {
-  log,
-  prettyPrint,
-} from '../utils/generalUtils';
+import { log } from '../utils/generalUtils';
 
 const flipCoin = (chance: number): boolean => {
   return Math.random() <= chance;
@@ -84,6 +81,18 @@ const getInitialProbeStates = (): ProbeStates => {
 
 const getOppositeDirection = (direction: 'up' | 'down'): 'up' | 'down' => (direction === 'up') ? 'down' : 'up';
 
+const getNewDirection = (probeInfo: ProbeInfo, probeState: ProbeState): 'up' | 'down' => {
+  const correctedFlipChance = ((): number => {
+    const chanceModifier = probeState.temperatureEvolutionDirection === 'up' ? Math.max(probeState.lastSeriousTemperature - 90, 0) : Math.max(80 - probeState.lastSeriousTemperature, 0);
+    const chance = Math.min(((1 - probeInfo.flipDirectionChance) / 10) * chanceModifier + probeInfo.flipDirectionChance, 1);
+
+    return chance;
+  })();
+
+  return flipCoin(correctedFlipChance) ?
+    getOppositeDirection(probeState.temperatureEvolutionDirection) : probeState.temperatureEvolutionDirection;
+};
+
 const getNextProbeState = (probeInfo: ProbeInfo, probeState: ProbeState): ProbeState => {
   if (flipCoin(probeInfo.hiccupChance)) { // Hiccup case
     return {
@@ -96,13 +105,13 @@ const getNextProbeState = (probeInfo: ProbeInfo, probeState: ProbeState): ProbeS
   const newTemperature = probeState.temperatureEvolutionDirection === 'up' ?
     probeState.lastSeriousTemperature + temperatureDelta : probeState.lastSeriousTemperature - temperatureDelta;
 
+  const newDirection = getNewDirection(probeInfo, probeState);
+
   return {
     ...probeState,
     temperature: newTemperature,
     lastSeriousTemperature: newTemperature,
-    ...(flipCoin(probeInfo.flipDirectionChance) ? {
-      temperatureEvolutionDirection: getOppositeDirection(probeState.temperatureEvolutionDirection),
-    } : {}),
+    temperatureEvolutionDirection: newDirection,
   };
 };
 
@@ -138,7 +147,7 @@ const main = async () => {
     else {
       const response = generateFakeTemperatureResponse();
 
-      prettyPrint(response);
+      log(response);
 
       res.end(response);
     }
