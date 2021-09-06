@@ -50,20 +50,20 @@ const probeInfos: ProbeInfos = {
     usualMaxTemperatureVariation: 0.2,
     flipDirectionChance: 0.05,
   },
-  ['randomstring']: {
-    probeId: 'randomstring',
-    chanceOfGettingRead: 0.02,
-    hiccupChance: 0.05,
-    usualMaxTemperatureVariation: 0.2,
-    flipDirectionChance: 0.05,
-  },
-  ['Uááááááááááááá!!!']: {
-    probeId: 'Uááááááááááááá!!!',
-    chanceOfGettingRead: 0.02,
-    hiccupChance: 0.05,
-    usualMaxTemperatureVariation: 0.2,
-    flipDirectionChance: 0.05,
-  },
+  // ['randomstring']: {
+  //   probeId: 'randomstring',
+  //   chanceOfGettingRead: 0.02,
+  //   hiccupChance: 0.05,
+  //   usualMaxTemperatureVariation: 0.2,
+  //   flipDirectionChance: 0.05,
+  // },
+  // ['Uááááááááááááá!!!']: {
+  //   probeId: 'Uááááááááááááá!!!',
+  //   chanceOfGettingRead: 0.02,
+  //   hiccupChance: 0.05,
+  //   usualMaxTemperatureVariation: 0.2,
+  //   flipDirectionChance: 0.05,
+  // },
 };
 
 const getInitialProbeStates = (): ProbeStates => {
@@ -83,7 +83,8 @@ const getOppositeDirection = (direction: 'up' | 'down'): 'up' | 'down' => (direc
 
 const getNewDirection = (probeInfo: ProbeInfo, probeState: ProbeState): 'up' | 'down' => {
   const correctedFlipChance = ((): number => {
-    const chanceModifier = probeState.temperatureEvolutionDirection === 'up' ? Math.max(probeState.lastSeriousTemperature - 90, 0) : Math.max(80 - probeState.lastSeriousTemperature, 0);
+    const chanceModifyingTemperatureDelta = probeState.temperatureEvolutionDirection === 'up' ? Math.max(probeState.lastSeriousTemperature - 90, 0) : Math.max(80 - probeState.lastSeriousTemperature, 0);
+    const chanceModifier = ((chanceModifyingTemperatureDelta / 10) ** 2) * 10;
     const chance = Math.min(((1 - probeInfo.flipDirectionChance) / 10) * chanceModifier + probeInfo.flipDirectionChance, 1);
 
     return chance;

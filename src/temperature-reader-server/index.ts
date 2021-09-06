@@ -23,10 +23,10 @@ import { getStaticRoutes } from './routing';
 import { createTemperatureReader } from './tempReading/tempReading';
 
 const config: Config = {
-  probesUrl: 'http://sondy/',
+  // probesUrl: 'http://sondy/',
   remoteServerAddress: 'https://temperature-graph.herokuapp.com/',
   // remoteServerAddress: 'http://localhost:3002/',  // For testing purposes
-  // probesUrl: 'http://localhost:3001/',  // For testing purposes
+  probesUrl: 'http://localhost:3001/',  // For testing purposes
   maxTemperatureDeltaInInterval: 5,
   numberOfReadingsToKeep: 1800 / 5, // Half an hour
   probeRequestTimeoutMs: 4000,
