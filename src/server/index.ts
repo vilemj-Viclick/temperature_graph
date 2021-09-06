@@ -21,13 +21,13 @@ import { getStaticRoutes } from './routing';
 import { createTemperatureReader } from './tempReading/tempReading';
 
 const config: Config = {
-  // probesUrl: 'http://sondy/',
-  probesUrl: 'http://localhost:3001/',  // For testing purposes
-  probingIntervalMs: 1000,
+  probesUrl: 'http://sondy/',
+  // probesUrl: 'http://localhost:3001/',  // For testing purposes
+  probingIntervalMs: 5000,
   readingsJSonPath: './public/files/readings.json',
   numberOfReadingsToKeep: 1800 / 5, // Half an hour
   maxTemperatureDeltaInInterval: 5,
-  probeRequestTimeoutMs: 1000,
+  probeRequestTimeoutMs: 4000,
 };
 
 const startTemperatureLogging = async (updateTempLog: (log: Log<ITemperatureReading>) => void) => {
