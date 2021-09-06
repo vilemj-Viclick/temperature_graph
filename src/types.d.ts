@@ -25,12 +25,13 @@ export type Log<TLogItem> = Array<LogEntry<TLogItem>>;
 export type LogJson<TLogItem> = Array<LogEntryJson<TLogItem>>;
 
 export type Config = {
+  readonly maxTemperatureDeltaInInterval: number; // This will serve to filter out incoherent readings.
+  readonly numberOfReadingsToKeep: number;
+  readonly probeRequestTimeoutMs: number;
   readonly probesUrl: string;
   readonly probingIntervalMs: number,
   readonly readingsJSonPath: string;
-  readonly numberOfReadingsToKeep: number;
-  readonly maxTemperatureDeltaInInterval: number; // This will serve to filter out incoherent readings.
-  readonly probeRequestTimeoutMs: number;
+  readonly remoteServerAddress: string;
 };
 
 export interface IProbeInfo {

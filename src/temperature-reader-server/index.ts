@@ -1,6 +1,7 @@
 import express from 'express';
 import morgan from 'morgan';
 import { AddressInfo } from 'net';
+import fetch from 'node-fetch';
 import open from 'open';
 import path from 'path';
 import {
@@ -11,6 +12,7 @@ import {
 } from '../types';
 import {
   getLast,
+  log,
   prettify,
   prettyPrint,
 } from '../utils/generalUtils';
@@ -22,29 +24,44 @@ import { createTemperatureReader } from './tempReading/tempReading';
 
 const config: Config = {
   probesUrl: 'http://sondy/',
+  remoteServerAddress: 'https://temperature-graph.herokuapp.com/',
+  // remoteServerAddress: 'http://localhost:3002/',  // For testing purposes
   // probesUrl: 'http://localhost:3001/',  // For testing purposes
+  maxTemperatureDeltaInInterval: 5,
+  numberOfReadingsToKeep: 1800 / 5, // Half an hour
+  probeRequestTimeoutMs: 4000,
   probingIntervalMs: 5000,
   readingsJSonPath: './public/files/readings.json',
-  numberOfReadingsToKeep: 1800 / 5, // Half an hour
-  maxTemperatureDeltaInInterval: 5,
-  probeRequestTimeoutMs: 4000,
 };
 
 const startTemperatureLogging = async (updateTempLog: (log: Log<ITemperatureReading>) => void) => {
   const tempReader = createTemperatureReader(config);
 
-  setInterval(async ()=>{
+  setInterval(async () => {
     const readingLog = await tempReader.getNextReadings();
     prettyPrint(getLast(readingLog));
     saveAsJson(readingLog, path.join(__dirname, '../..', config.readingsJSonPath));
     updateTempLog(readingLog);
-  },config.probingIntervalMs);
+  }, config.probingIntervalMs);
 };
 
 const main = async () => {
   let lastReadingLog: Log<ITemperatureReading> = [];
-  startTemperatureLogging(log => {
-    lastReadingLog = log;
+  startTemperatureLogging(temperatureLog => {
+    lastReadingLog = temperatureLog;
+    fetch(config.remoteServerAddress + 'readings', {
+      method: 'POST',
+      body: prettify(temperatureLog),
+      timeout: config.probeRequestTimeoutMs,
+      headers: {
+        'Content-type': 'application/json',
+      },
+    }).catch(error => {
+      log('Failed to send new log to remote server. Reason follows:');
+      log(error);
+    }).then(() => {
+      log('Finished sending temperatures.');
+    });
   });
 
   const app = express();
