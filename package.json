@@ -37,10 +37,12 @@
     "@types/fs-extra": "^9.0.12",
     "@types/morgan": "^1.9.3",
     "@types/node-fetch": "^2.5.12",
+    "@types/react": "^17.0.33",
+    "@types/react-dom": "^17.0.10",
+    "@types/styled-components": "^5.1.15",
     "@types/webpack-dev-middleware": "^5.0.2",
     "babel-loader": "^8.2.2",
     "babel-node": "0.0.1-security",
-    "babel-plugin-styled-components": "^1.13.2",
     "body-parser": "^1.19.0",
     "chart.js": "^3.5.1",
     "cross-env": "^7.0.3",
@@ -50,9 +52,17 @@
     "morgan": "^1.10.0",
     "node-fetch": "^2.6.1",
     "open": "^8.2.1",
+    "process": "^0.11.10",
+    "prop-types": "^15.7.2",
     "pug": "^2.0.4",
     "pug-loader": "^2.4.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "styled-components": "^5.3.3",
     "webpack": "^5.51.1",
     "webpack-dev-middleware": "^5.0.0"
+  },
+  "devDependencies": {
+    "babel-plugin-styled-components": "^1.13.3"
   }
 }

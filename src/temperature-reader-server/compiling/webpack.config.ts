@@ -1,6 +1,9 @@
-import path from 'path';
-import { Configuration } from 'webpack';
 import HTMLWebpackPlugin from 'html-webpack-plugin';
+import path from 'path';
+import {
+  Configuration,
+  ProvidePlugin,
+} from 'webpack';
 
 export const webpackConfig: Configuration = {
   mode: 'none',
@@ -17,6 +20,9 @@ export const webpackConfig: Configuration = {
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.json', '.less'],
+    alias: {
+      process: 'process/browser',
+    },
   },
   module: {
     rules: [
@@ -45,6 +51,9 @@ export const webpackConfig: Configuration = {
       template: path.join(__dirname, '../templates/client.pug'),
       scriptLoading: 'defer',
       filename: 'client.html',
+    }),
+    new ProvidePlugin({
+      process: 'process/browser',
     }),
   ],
 };
