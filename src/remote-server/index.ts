@@ -2,6 +2,7 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import morgan from 'morgan';
 import { AddressInfo } from 'net';
+import path from 'path';
 import { compileClient } from '../temperature-reader-server/compiling/compileClient';
 import { getProbeMappings } from '../temperature-reader-server/probeMapping';
 import { getStaticRoutes } from '../temperature-reader-server/routing';
@@ -19,12 +20,16 @@ const main = async () => {
   let lastReadingLog: Log<ITemperatureReading> = [];
 
   const app = express();
+
   // Set up logging
   app.use(morgan('dev'));
+
   // Set up client compilations
   compileClient(app);
   app.use(bodyParser.json());
+
   // Set up routing
+  app.use(express.static(path.join(__dirname, '../../public')));
   const router = express.Router();
   router.get('/readings.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');

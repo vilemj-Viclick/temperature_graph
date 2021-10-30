@@ -65,11 +65,15 @@ const main = async () => {
   });
 
   const app = express();
+
   // Set up logging
   app.use(morgan('dev'));
+
   // Set up client compilations
   compileClient(app);
+
   // Set up routing
+  app.use(express.static(path.join(__dirname, '../../public')));
   const router = express.Router();
   router.get('/readings.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
